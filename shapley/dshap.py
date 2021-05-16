@@ -39,13 +39,13 @@ class DShap:
             return score / n 
 
     def run(self, max_epochs=50): 
-        # self.restart_model() 
-        # if self.device == "cuda":
-        #     self.trainer = pl.Trainer(gpus=1, max_epochs=max_epochs) 
-        #     self.trainer.fit(self.model, self.data_module)
-        # else:
-        #     self.trainer = pl.Trainer(max_epochs=max_epochs) 
-        #     self.trainer.fit(self.model, self.data_module)
+        self.restart_model() 
+        if self.device == "cuda":
+            self.trainer = pl.Trainer(gpus=1, max_epochs=max_epochs) 
+            self.trainer.fit(self.model, self.data_module)
+        else:
+            self.trainer = pl.Trainer(max_epochs=max_epochs) 
+            self.trainer.fit(self.model, self.data_module)
         if self.measure is not None: 
             return self.measure.score(self.data_module, self.model)
 

@@ -19,6 +19,7 @@ class KNNShapley:
         N = len(dm.train_set)
         M = len(dm.test_set)
         s = torch.zeros((N, M))
+        dm.shuffle = False
         
         if type(dm.train_set[0][1]) == int:
             y_train = torch.zeros(0)
@@ -29,17 +30,21 @@ class KNNShapley:
 
         stored = False
         for i, (x, y) in enumerate(tqdm(dm.test_set)):
-            dist = torch.zeros(0)
+            diff = None
             X = model(x.unsqueeze(0))
 
             for j, (X_b, y_b) in enumerate(tqdm(dm.train_dataloader(), desc="Train Inference")):
                 X_hat = model(X_b) 
-                diff = (X_hat - X).reshape((X_b.shape[0], -1))
-                dist_b = torch.einsum('ij, ij->i', diff, diff)
-                dist = torch.cat([dist, dist_b.detach()])
+                diff_b = (X_hat - X).reshape((X_hat.shape[0], -1))
+                
+                if diff is None:
+                    diff = diff_b 
+                else:
+                    diff = torch.cat([diff, diff_b])
                 if not stored:
                     y_train = torch.cat([y_train, y_b])
 
+            dist = torch.einsum('ij, ij->i', diff, diff)
             idx = torch.argsort(dist)
             ans = y_train[idx]
             s[idx[N - 1]][i] = float(ans[N - 1] == y) / N
@@ -50,5 +55,5 @@ class KNNShapley:
                 cur -= 1
 
             stored = True 
-            
+
         return torch.mean(s, -1) 

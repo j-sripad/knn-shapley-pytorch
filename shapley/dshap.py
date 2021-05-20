@@ -38,7 +38,7 @@ class DShap:
                 n += 1
             return score / n 
 
-    def run(self, max_epochs=50): 
+    def run(self, max_epochs=10): 
         self.restart_model() 
         if self.device == "cuda":
             self.trainer = pl.Trainer(gpus=1, max_epochs=max_epochs) 
@@ -51,7 +51,3 @@ class DShap:
 
     def restart_model(self): 
         self.model = copy.deepcopy(self.model)
-
-
-
-        

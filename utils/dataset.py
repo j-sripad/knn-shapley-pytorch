@@ -62,7 +62,7 @@ class FashionMNISTFlipped(FashionMNISTFiltered):
 
 class FashionMNISTDataModule(pl.LightningDataModule):
     def __init__(self, data_dir: str = "./", batch_size: int = 32, num_train: int=1000, 
-                num_test: int=100, num_flip: float=0.2, classes=[0, 6], num_workers=4):
+                num_test: int=100, num_flip: float=0.2, classes=[0, 6], shuffle=True, num_workers=4):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
@@ -70,6 +70,7 @@ class FashionMNISTDataModule(pl.LightningDataModule):
         self.num_test = num_test 
         self.num_flip = num_flip 
         self.classes = classes 
+        self.shuffle = shuffle
         self.num_workers=num_workers
         self.num_classes = len(classes)
 
@@ -105,10 +106,10 @@ class FashionMNISTDataModule(pl.LightningDataModule):
         self.test_set = FashionMNISTFiltered(fmnist_test, classes=self.classes, num=self.num_test)
 
     def train_dataloader(self):
-        return DataLoader(self.train_set, batch_size=self.batch_size, num_workers=self.num_workers, pin_memory=True)
+        return DataLoader(self.train_set, batch_size=self.batch_size, shuffle=self.shuffle, num_workers=self.num_workers, pin_memory=True)
 
     def val_dataloader(self):
-        return DataLoader(self.test_set, batch_size=self.batch_size, num_workers=self.num_workers, pin_memory=True)
+        return DataLoader(self.test_set, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True)
 
     def test_dataloader(self):
-        return DataLoader(self.test_set, batch_size=self.batch_size, num_workers=self.num_workers, pin_memory=True)
+        return DataLoader(self.test_set, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True)

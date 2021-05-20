@@ -67,7 +67,9 @@ class LabelPlotter:
                 cnt += 1
             f.append(1.0 * cnt / total)
         x = np.array(range(1, data_num + 1)) / data_num * 100
-        f = x / 100
+        # f = x / 100
+        x = np.append(x[0:-1:100], x[-1])
+        f = np.append(f[0:-1:100], f[-1])
         plt.plot(x, np.array(f) * 100, '--', color='red', label = "Random", zorder=7)
 
         plt.xlabel('Fraction of data inspected (%)', fontsize=15)

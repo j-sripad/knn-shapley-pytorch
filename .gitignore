@@ -136,3 +136,6 @@ FashionMNIST
 
 # lightning logs
 lightning_logs
+
+# checkpoints 
+checkpoints

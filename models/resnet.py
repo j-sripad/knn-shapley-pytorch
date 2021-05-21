@@ -69,18 +69,3 @@ class ResNet(pl.LightningModule):
         parser.add_argument('--n_classes', type=int, default=2)
         parser.add_argument('--learning_rate', type=float, default=1e-3)
         return parser
-
-
-if __name__ == "__main__":
-    data_dir = "../dataset/"
-    # dm = CatsVsDogsDataModule(data_dir=data_dir)
-    # dm.setup()
-    # model = Net(n_classes=2)
-    # print(model)
-
-    # for X, y in dm.train_dataloader():
-    #     out = model(X)
-    #     print(out, y)
-    #     print(out.shape, y.shape)
-    #     print(F.nll_loss(out, y))
-    #     break

@@ -1,3 +1,9 @@
+import os 
+import sys
+
+sys.path.append(os.path.abspath(os.path.pardir))
+from argparse import ArgumentParser
+
 import torch 
 import torch.nn as nn 
 import torch.nn.functional as F 
@@ -80,8 +86,9 @@ class OutConv(nn.Module):
 
 class UNet(pl.LightningModule):
     
-    def __init__(self, n_channels, n_classes, bilinear=True):
+    def __init__(self, n_channels, n_classes, learning_rate=1e-3, bilinear=True):
         super(UNet, self).__init__()
+        self.save_hyperparameters()
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.bilinear = bilinear
@@ -98,11 +105,9 @@ class UNet(pl.LightningModule):
         self.outc = OutConv(64, n_classes)
 
     def score(self, X, y):
-        y_pred = self.predict(X)
-        print(y_pred.shape, y.shape)
-        temp_iou = iou(y_pred, y)
-        print(temp_iou)
-        return temp_iou
+        y_pred = self.decoder(self.encoder(X))
+        IoU = iou(y_pred, y)
+        return IoU
 
     def encoder(self, x): 
         x1 = self.inc(x)
@@ -130,7 +135,7 @@ class UNet(pl.LightningModule):
         y_hat = self.outc(x) 
 
         loss = F.cross_entropy(y_hat, y)
-        self.log("train loss", loss)
+        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss 
 
     def validation_step(self, batch, batch_idx):
@@ -140,7 +145,7 @@ class UNet(pl.LightningModule):
         y_hat = self.outc(x) 
 
         loss = F.cross_entropy(y_hat, y)
-        self.log("val loss", loss)
+        self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss 
 
     def test_step(self, batch, batch_idx):
@@ -150,8 +155,22 @@ class UNet(pl.LightningModule):
         y_hat = self.outc(x) 
 
         loss = F.cross_entropy(y_hat, y)
-        self.log("test loss", loss)
+        self.log("test_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
 
     def configure_optimizers(self):
-        return optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.1, patience=1)
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': scheduler,
+            'monitor': 'val_loss'
+        }
+
+    @staticmethod
+    def add_model_specific_args(parent_parser: ArgumentParser) -> ArgumentParser:
+        parser = ArgumentParser(parents=[parent_parser], add_help=False)
+        parser.add_argument('--n_channels', type=int, default=3)
+        parser.add_argument('--n_classes', type=int, default=2)
+        parser.add_argument('--learning_rate', type=float, default=1e-3)
+        return parser

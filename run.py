@@ -2,7 +2,7 @@ from models.resnet import ResNet
 from shapley.dshap import DShap 
 from utils.dataset import FashionMNISTDataModule
 from shapley.knn_shapley import KNNShapley
-
+import numpy as np
 def main():
     dm = FashionMNISTDataModule() 
     dm.setup() 

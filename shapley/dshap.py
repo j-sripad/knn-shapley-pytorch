@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F 
 from torchmetrics.functional import iou, accuracy
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
 
 from models.unet import UNet 
 
@@ -19,6 +20,18 @@ class DShap:
         self.measure = measure
         self.device = device
         self.random_score = self.init_score(self.metric)
+
+        checkpoint_callback = ModelCheckpoint(
+            monitor="val_loss_epoch",
+            dirpath="./checkpoints/",
+            filename="net-{epoch:02d}-{val_loss_epoch:.2f}",
+            save_top_k=-1,
+        )
+
+        checkpoint_callback.FILE_EXTENSION = ".pth.tar"
+        lr_monitor = LearningRateMonitor(logging_interval="step")
+
+        self.callbacks = [checkpoint_callback, lr_monitor]
 
     def init_score(self, metric):
         """ Gives the value of an initial untrained model."""
@@ -41,11 +54,12 @@ class DShap:
     def run(self, max_epochs=10): 
         self.restart_model() 
         if self.device == "cuda":
-            self.trainer = pl.Trainer(gpus=1, max_epochs=max_epochs) 
+            self.trainer = pl.Trainer(gpus=1, max_epochs=max_epochs, callbacks=self.callbacks) 
             self.trainer.fit(self.model, self.data_module)
         else:
-            self.trainer = pl.Trainer(max_epochs=max_epochs) 
+            self.trainer = pl.Trainer(max_epochs=max_epochs, callbacks=self.callbacks) 
             self.trainer.fit(self.model, self.data_module)
+
         if self.measure is not None: 
             return self.measure.score(self.data_module, self.model)
 

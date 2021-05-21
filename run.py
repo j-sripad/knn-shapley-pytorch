@@ -1,3 +1,5 @@
+import torch 
+
 from models.resnet import ResNet 
 from shapley.dshap import DShap 
 from utils.dataset import FashionMNISTDataModule
@@ -17,5 +19,7 @@ def main():
     return scores
 
 if __name__ == "__main__":
+    save_dir = "fmnist_shapley.pt"
     scores = main()
     print(scores)
+    torch.save(scores, save_dir)

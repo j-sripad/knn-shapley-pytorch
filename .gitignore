@@ -134,6 +134,9 @@ dmypy.json
 # Fashion MNIST
 FashionMNIST
 
+# Pascal VOC 
+VOC2012
+
 # lightning logs
 lightning_logs
 

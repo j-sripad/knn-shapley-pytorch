@@ -195,7 +195,52 @@ class PascalVOCDataset(VOCSegmentation):
 
         mask = np.asarray(mask).copy()
         mask = torch.tensor(mask).long()
-        return image, mask 
+        return image, mask, mask.unique()
+
+class PascalVOCFlippedDataset(VOCSegmentation):
+    def __init__(self, data_dir="./VOC2012/", image_set="train", download=False, transform=None, target_transform=None, to_flip=0.2):
+        super().__init__(root=data_dir, image_set=image_set, download=download, transform=transform, target_transform=target_transform)
+        self.to_flip = to_flip 
+        indices = torch.randperm(len(self))
+        self.flipped = indices[:int(self.to_flip * len(indices))]
+
+    @staticmethod
+    def _convert_to_segmentation_mask(mask, flip=False):
+        height, width = mask.shape[:2]
+        segmentation_mask = np.zeros((height, width), dtype=np.float32)
+        num_classes = len(VOC_CLASSES)
+        for label_index, label in enumerate(VOC_COLORMAP):
+            if not flip or label_index == 0:
+                segmentation_mask += np.all(mask == label, axis=-1) * label_index
+            elif flip and label_index == num_classes - 1:
+                segmentation_mask += np.all(mask == label, axis=-1) * 1.
+            else:
+                segmentation_mask += np.all(mask == label, axis=-1) * ((label_index + 1) % num_classes)
+        return segmentation_mask
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, index):
+        image = cv2.imread(self.images[index])
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        mask = cv2.imread(self.masks[index])
+        mask = cv2.cvtColor(mask, cv2.COLOR_BGR2RGB)
+        if index in self.flipped:
+            print("flipped")
+            mask = self._convert_to_segmentation_mask(mask, flip=True)
+        else:
+            mask = self._convert_to_segmentation_mask(mask)
+
+        if self.transform is not None:
+            image = self.transform(image)
+
+        if self.target_transform is not None:
+            mask = self.target_transform(mask)
+
+        mask = np.asarray(mask).copy()
+        mask = torch.tensor(mask).long()
+        return image, mask, mask.unique()
 
 
 class PascalVOCDataModule(pl.LightningDataModule):
@@ -232,7 +277,7 @@ class PascalVOCDataModule(pl.LightningDataModule):
         PascalVOCDataset(data_dir=self.data_dir, image_set="val", download=True)
 
     def setup(self, stage=None):
-        self.train_set = PascalVOCDataset(self.data_dir, image_set="train", transform=self.transform, target_transform=self.target_transform)
+        self.train_set = PascalVOCFlippedDataset(self.data_dir, image_set="train", transform=self.transform, target_transform=self.target_transform)
         self.val_set = PascalVOCDataset(self.data_dir, image_set="val", transform=self.transform, target_transform=self.target_transform) 
 
     def train_dataloader(self):

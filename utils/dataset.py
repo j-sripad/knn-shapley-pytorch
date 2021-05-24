@@ -1,10 +1,11 @@
 import numpy as np
 from torchvision.transforms.transforms import ToPILImage
 import cv2
+from PIL.Image import NEAREST
 
 import torch 
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms 
+from torchvision import transforms
 from torchvision.datasets import FashionMNIST, VOCSegmentation
 import pytorch_lightning as pl 
 
@@ -220,7 +221,7 @@ class PascalVOCDataModule(pl.LightningDataModule):
         if target_transform is None:
             self.target_transform = transforms.Compose([
                 transforms.ToPILImage(),
-                transforms.Resize(256),
+                transforms.Resize(256, interpolation=NEAREST),
                 transforms.CenterCrop(224)
             ])
         else:
